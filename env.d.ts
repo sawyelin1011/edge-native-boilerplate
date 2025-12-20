@@ -1,73 +1,32 @@
 /// <reference types="@cloudflare/workers-types" />
 
-// Global environment types for the fullstack application
-
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      NODE_ENV: 'development' | 'production' | 'test'
-    }
-  }
-}
-
-// Cloudflare Workers Environment
 export interface Env {
-  // D1 Database
   DB: D1Database
-  
-  // KV Storage
   KV: KVNamespace
-  
-  // R2 Storage
   BUCKET: R2Bucket
-  
-  // Environment Variables
-  JWT_SECRET: string
-  SESSION_SECRET: string
-  DATABASE_ID: string
-  ENVIRONMENT: 'development' | 'production' | 'staging'
-  
-  // Optional external services
-  EXTERNAL_API_KEY?: string
-  WEBHOOK_SECRET?: string
-}
 
-// Worker Context Variables
-export interface Variables {
-  user?: {
-    id: string
-    email: string
-    role: string
-  }
-  requestId: string
-  db: any // Drizzle database instance
-}
+  ENVIRONMENT?: string
+  LOG_LEVEL?: string
 
-// API Response Types
-export interface ApiResponse<T = any> {
-  data?: T
-  error?: string
-  message?: string
-  meta?: {
-    total?: number
-    page?: number
-    limit?: number
-  }
-}
+  CORS_ORIGINS?: string
+  CORS_CREDENTIALS?: string
 
-// Authentication Types
-export interface AuthUser {
-  id: string
-  email: string
-  role: string
-  createdAt: string
-  updatedAt: string
-}
+  JWT_SECRET?: string
+  JWT_ACCESS_TTL_SECONDS?: string
+  JWT_REFRESH_TTL_SECONDS?: string
 
-export interface AuthTokens {
-  accessToken: string
-  refreshToken: string
-  expiresIn: number
+  SESSION_SECRET?: string
+  SESSION_ENABLED?: string
+  SESSION_COOKIE_NAME?: string
+  SESSION_TTL_SECONDS?: string
+  SESSION_ROTATE_EVERY_SECONDS?: string
+
+  RATE_LIMIT_ENABLED?: string
+  RATE_LIMIT_WINDOW_SECONDS?: string
+  RATE_LIMIT_MAX_REQUESTS?: string
+
+  STORAGE_ENABLED?: string
+  STORAGE_SIGNING_SECRET?: string
 }
 
 export {}

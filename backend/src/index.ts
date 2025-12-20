@@ -3,111 +3,165 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { prettyJSON } from 'hono/pretty-json'
 import { secureHeaders } from 'hono/secure-headers'
+import { z } from 'zod'
+
+import { requestContextMiddleware } from './middleware/requestContext'
+import { rateLimit } from './middleware/rateLimit'
+import { ApiError, fromZodError } from './lib/http/errors'
+import { fail } from './lib/http/response'
 
 import { apiRoutes } from './routes/api'
 import { authRoutes } from './routes/auth'
-import { drizzle } from 'drizzle-orm/d1'
-import * as schema from './lib/schema'
+import { v1Routes } from './routes/v1'
 
-// Edge-native types (following Edge Manifest pattern)
+import type { AppConfig } from './config'
+import type { Database } from './db/client'
+import type { AuthUser } from './modules/auth/types'
+
 export type Bindings = {
   DB: D1Database
   KV: KVNamespace
   BUCKET: R2Bucket
-  JWT_SECRET?: string
-  SESSION_SECRET?: string
-  DATABASE_ID?: string
+
   ENVIRONMENT?: string
-  EXTERNAL_API_KEY?: string
-  WEBHOOK_SECRET?: string
+  LOG_LEVEL?: string
+
+  CORS_ORIGINS?: string
+  CORS_CREDENTIALS?: string
+
+  JWT_SECRET?: string
+  JWT_ACCESS_TTL_SECONDS?: string
+  JWT_REFRESH_TTL_SECONDS?: string
+
+  SESSION_SECRET?: string
+  SESSION_ENABLED?: string
+  SESSION_COOKIE_NAME?: string
+  SESSION_TTL_SECONDS?: string
+  SESSION_ROTATE_EVERY_SECONDS?: string
+
+  RATE_LIMIT_ENABLED?: string
+  RATE_LIMIT_WINDOW_SECONDS?: string
+  RATE_LIMIT_MAX_REQUESTS?: string
+
+  STORAGE_ENABLED?: string
+  STORAGE_SIGNING_SECRET?: string
 }
 
 export type Variables = {
   requestId: string
-  db: ReturnType<typeof drizzle>
-  user?: {
-    id: string
-    email: string
-    role: string
-  }
+  db: Database
+  config: AppConfig
+  user?: AuthUser
+  csrfToken: string | null
 }
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
-// Global middleware
+app.use('*', requestContextMiddleware)
+
 app.use('*', logger())
 app.use('*', prettyJSON())
-app.use('*', secureHeaders())
+app.use(
+  '*',
+  secureHeaders({
+    xFrameOptions: 'DENY',
+    xContentTypeOptions: 'nosniff',
+    referrerPolicy: 'no-referrer'
+  })
+)
 
-// CORS middleware - edge-native configuration
-app.use('*', cors({
-  origin: (origin, c) => {
-    // In development, allow localhost and 127.0.0.1
-    // In production, configure specific origins
-    if (!origin) return '*'
-    
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'https://yourdomain.com'
-    ]
-    
-    return allowedOrigins.includes(origin) ? origin : null
-  },
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
-  exposeHeaders: ['X-Request-ID'],
-  credentials: true,
-  maxAge: 86400
-}))
+app.use(
+  '*',
+  cors({
+    origin: (origin, c) => {
+      const corsOrigins = c.get('config').cors.origins
 
-// Request ID and database middleware
-app.use('*', async (c, next) => {
-  // Generate request ID using Web Crypto API (edge-native)
-  const requestId = crypto.randomUUID()
-  c.set('requestId', requestId)
-  
-  // Initialize Drizzle database
-  c.set('db', drizzle(c.env.DB, { schema }))
-  
-  await next()
-  
-  // Add request ID to response headers
-  c.res.headers.set('X-Request-ID', requestId)
-})
+      if (corsOrigins === '*') return origin ?? '*'
+      if (!origin) return null
+      return corsOrigins.includes(origin) ? origin : null
+    },
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-CSRF-Token'],
+    exposeHeaders: ['X-Request-ID'],
+    credentials: true,
+    maxAge: 86400
+  })
+)
 
-// Health check endpoint
+app.use('/api/*', rateLimit({ prefix: 'api' }))
+app.use('/auth/*', rateLimit({ prefix: 'auth' }))
+
 app.get('/health', (c) => {
+  const config = c.get('config')
   return c.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: c.env.ENVIRONMENT || 'unknown',
+    success: true,
+    data: {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: config.environment,
+      requestId: c.get('requestId')
+    },
     requestId: c.get('requestId')
   })
 })
 
-// API routes with optional authentication
+app.route('/api/v1', v1Routes)
+
+// Backwards-compatible aliases
 app.route('/api', apiRoutes)
 app.route('/auth', authRoutes)
 
-// 404 handler
 app.notFound((c) => {
-  return c.json({
-    error: 'Not Found',
-    message: 'The requested resource was not found',
-    requestId: c.get('requestId')
-  }, 404)
+  return c.json(
+    fail({
+      code: 'NOT_FOUND',
+      message: 'The requested resource was not found',
+      requestId: c.get('requestId')
+    }),
+    { status: 404 }
+  )
 })
 
-// Global error handler
 app.onError((err, c) => {
-  console.error('Global error:', err)
-  
-  return c.json({
-    error: 'Internal Server Error',
-    message: c.env.ENVIRONMENT === 'development' ? err.message : 'Something went wrong',
-    requestId: c.get('requestId')
-  }, 500)
+  const requestId = c.get('requestId')
+
+  if (err instanceof z.ZodError) {
+    const apiError = fromZodError(err)
+    return c.json(
+      fail({
+        code: apiError.code,
+        message: apiError.message,
+        details: apiError.details,
+        requestId
+      }),
+      { status: apiError.status }
+    )
+  }
+
+  if (err instanceof ApiError) {
+    return c.json(
+      fail({
+        code: err.code,
+        message: err.message,
+        details: err.details,
+        requestId
+      }),
+      { status: err.status }
+    )
+  }
+
+  console.error('Unhandled error', { requestId, err })
+
+  const message = c.get('config').environment === 'production' ? 'Internal Server Error' : (err as Error).message
+
+  return c.json(
+    fail({
+      code: 'INTERNAL_ERROR',
+      message,
+      requestId
+    }),
+    500
+  )
 })
 
 export default app
