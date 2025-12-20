@@ -7,7 +7,7 @@ import { ok } from '../../lib/http/response'
 import { parseJson } from '../../lib/validation'
 import { authMiddleware } from '../../middleware/auth'
 import { authProvider } from '../../modules/auth/provider'
-import { ApiError } from '../../lib/http/errors'
+import { createApiError } from '../../lib/http/errors'
 
 const RefreshCookieName = 'rt'
 
@@ -131,7 +131,7 @@ auth.post('/refresh', async (c) => {
   const refreshToken = body.refreshToken ?? getCookie(c, RefreshCookieName) ?? null
 
   if (!refreshToken) {
-    throw new ApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Missing refresh token' })
+    throw createApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Missing refresh token' })
   }
 
   const result = await authProvider.refresh(

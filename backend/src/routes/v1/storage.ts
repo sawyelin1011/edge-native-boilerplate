@@ -4,7 +4,7 @@ import { z } from 'zod'
 import type { Bindings, Variables } from '../../index'
 import { ok } from '../../lib/http/response'
 import { parseJson } from '../../lib/validation'
-import { ApiError } from '../../lib/http/errors'
+import { createApiError } from '../../lib/http/errors'
 import { signUpload, verifyUploadSignature } from '../../modules/storage/signedUpload'
 import { randomHex } from '../../lib/crypto'
 import { authMiddleware, requirePermission } from '../../middleware/auth'
@@ -23,7 +23,7 @@ const SignedDownloadSchema = z.object({
 storage.post('/signed-upload', authMiddleware, requirePermission('admin'), async (c) => {
   const config = c.get('config')
   if (!config.storage.enabled || !config.storage.signingSecret) {
-    throw new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Storage module disabled' })
+    throw createApiError({ status: 404, code: 'NOT_FOUND', message: 'Storage module disabled' })
   }
 
   const body = await parseJson(c, SignedUploadSchema)
@@ -55,7 +55,7 @@ storage.post('/signed-upload', authMiddleware, requirePermission('admin'), async
 storage.post('/signed-download', authMiddleware, async (c) => {
   const config = c.get('config')
   if (!config.storage.enabled || !config.storage.signingSecret) {
-    throw new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Storage module disabled' })
+    throw createApiError({ status: 404, code: 'NOT_FOUND', message: 'Storage module disabled' })
   }
 
   const body = await parseJson(c, SignedDownloadSchema)
@@ -71,10 +71,10 @@ storage.post('/signed-download', authMiddleware, async (c) => {
   return c.json(ok({ requestId: c.get('requestId'), data: { downloadUrl: url.toString(), expiresAt } }))
 })
 
-storage.put('/upload/:key', async (c) => { 
+storage.put('/upload/:key', async (c) => {
   const config = c.get('config')
   if (!config.storage.enabled || !config.storage.signingSecret) {
-    throw new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Storage module disabled' })
+    throw createApiError({ status: 404, code: 'NOT_FOUND', message: 'Storage module disabled' })
   }
 
   const key = decodeURIComponent(c.req.param('key'))
@@ -82,16 +82,21 @@ storage.put('/upload/:key', async (c) => {
   const sig = c.req.query('sig')
 
   if (!sig || !Number.isFinite(expiresAt)) {
-    throw new ApiError({ status: 400, code: 'VALIDATION_ERROR', message: 'Missing signature parameters' })
+    throw createApiError({ status: 400, code: 'VALIDATION_ERROR', message: 'Missing signature parameters' })
   }
 
   const okSig = await verifyUploadSignature({ secret: config.storage.signingSecret, key, expiresAt, signature: sig })
   if (!okSig) {
-    throw new ApiError({ status: 403, code: 'FORBIDDEN', message: 'Invalid or expired upload signature' })
+    throw createApiError({ status: 403, code: 'FORBIDDEN', message: 'Invalid or expired upload signature' })
+  }
+
+  const bucket = c.env.BUCKET
+  if (!bucket) {
+    throw createApiError({ status: 500, code: 'INTERNAL_ERROR', message: 'R2 bucket binding is missing' })
   }
 
   const contentType = c.req.header('Content-Type') ?? 'application/octet-stream'
-  await c.env.BUCKET.put(key, c.req.raw.body, {
+  await bucket.put(key, c.req.raw.body, {
     httpMetadata: {
       contentType
     }
@@ -103,7 +108,7 @@ storage.put('/upload/:key', async (c) => {
 storage.get('/objects/:key', async (c) => {
   const config = c.get('config')
   if (!config.storage.enabled || !config.storage.signingSecret) {
-    throw new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Storage module disabled' })
+    throw createApiError({ status: 404, code: 'NOT_FOUND', message: 'Storage module disabled' })
   }
 
   const key = decodeURIComponent(c.req.param('key'))
@@ -111,17 +116,22 @@ storage.get('/objects/:key', async (c) => {
   const sig = c.req.query('sig')
 
   if (!sig || !Number.isFinite(expiresAt)) {
-    throw new ApiError({ status: 403, code: 'FORBIDDEN', message: 'Missing access signature' })
+    throw createApiError({ status: 403, code: 'FORBIDDEN', message: 'Missing access signature' })
   }
 
   const okSig = await verifyUploadSignature({ secret: config.storage.signingSecret, key, expiresAt, signature: sig })
   if (!okSig) {
-    throw new ApiError({ status: 403, code: 'FORBIDDEN', message: 'Invalid or expired access signature' })
+    throw createApiError({ status: 403, code: 'FORBIDDEN', message: 'Invalid or expired access signature' })
   }
 
-  const object = await c.env.BUCKET.get(key)
+  const bucket = c.env.BUCKET
+  if (!bucket) {
+    throw createApiError({ status: 500, code: 'INTERNAL_ERROR', message: 'R2 bucket binding is missing' })
+  }
+
+  const object = await bucket.get(key)
   if (!object) {
-    throw new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Object not found' })
+    throw createApiError({ status: 404, code: 'NOT_FOUND', message: 'Object not found' })
   }
 
   const headers = new Headers()

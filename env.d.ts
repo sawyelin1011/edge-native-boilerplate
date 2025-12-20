@@ -3,7 +3,7 @@
 export interface Env {
   DB: D1Database
   KV: KVNamespace
-  BUCKET: R2Bucket
+  BUCKET?: R2Bucket
 
   ENVIRONMENT?: string
   LOG_LEVEL?: string

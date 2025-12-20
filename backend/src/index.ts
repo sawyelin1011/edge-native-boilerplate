@@ -7,7 +7,7 @@ import { z } from 'zod'
 
 import { requestContextMiddleware } from './middleware/requestContext'
 import { rateLimit } from './middleware/rateLimit'
-import { ApiError, fromZodError } from './lib/http/errors'
+import { fromZodError, isApiError } from './lib/http/errors'
 import { fail } from './lib/http/response'
 
 import { apiRoutes } from './routes/api'
@@ -21,7 +21,7 @@ import type { AuthUser } from './modules/auth/types'
 export type Bindings = {
   DB: D1Database
   KV: KVNamespace
-  BUCKET: R2Bucket
+  BUCKET?: R2Bucket
 
   ENVIRONMENT?: string
   LOG_LEVEL?: string
@@ -138,7 +138,7 @@ app.onError((err, c) => {
     )
   }
 
-  if (err instanceof ApiError) {
+  if (isApiError(err)) {
     return c.json(
       fail({
         code: err.code,

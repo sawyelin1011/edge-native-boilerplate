@@ -1,6 +1,6 @@
 import { createMiddleware } from 'hono/factory'
 import type { Bindings, Variables } from '../index'
-import { ApiError } from '../lib/http/errors'
+import { createApiError } from '../lib/http/errors'
 
 const unsafeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
@@ -18,7 +18,7 @@ export const csrfMiddleware = createMiddleware<{ Bindings: Bindings; Variables: 
 
   const header = c.req.header('X-CSRF-Token')
   if (!header || header !== csrfToken) {
-    throw new ApiError({ status: 403, code: 'FORBIDDEN', message: 'CSRF token missing or invalid' })
+    throw createApiError({ status: 403, code: 'FORBIDDEN', message: 'CSRF token missing or invalid' })
   }
 
   await next()

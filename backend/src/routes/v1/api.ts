@@ -9,7 +9,7 @@ import { csrfMiddleware } from '../../middleware/csrf'
 import { createUser, findUserById, listUsers } from '../../db/repositories/users'
 import { createPost, listPosts } from '../../db/repositories/posts'
 import { createProduct, listProducts } from '../../db/repositories/products'
-import { ApiError } from '../../lib/http/errors'
+import { createApiError } from '../../lib/http/errors'
 import { hashPassword } from '../../lib/password'
 
 const api = new Hono<{ Bindings: Bindings; Variables: Variables }>()
@@ -59,7 +59,7 @@ api.post('/users', authMiddleware, requirePermission('users:write'), csrfMiddlew
 api.get('/users/:id', authMiddleware, requirePermission('users:read'), async (c) => {
   const user = await findUserById(c.get('db'), c.req.param('id'))
   if (!user) {
-    throw new ApiError({ status: 404, code: 'NOT_FOUND', message: 'User not found' })
+    throw createApiError({ status: 404, code: 'NOT_FOUND', message: 'User not found' })
   }
 
   return c.json(ok({ requestId: c.get('requestId'), data: user }))

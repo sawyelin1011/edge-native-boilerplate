@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 import type { z } from 'zod'
-import { ApiError } from './http/errors'
+import { createApiError } from './http/errors'
 
 export async function parseJson<TSchema extends z.ZodTypeAny>(
   c: Context,
@@ -10,12 +10,12 @@ export async function parseJson<TSchema extends z.ZodTypeAny>(
   try {
     body = await c.req.json()
   } catch {
-    throw new ApiError({ status: 400, code: 'VALIDATION_ERROR', message: 'Invalid JSON body' })
+    throw createApiError({ status: 400, code: 'VALIDATION_ERROR', message: 'Invalid JSON body' })
   }
 
   const parsed = schema.safeParse(body)
   if (!parsed.success) {
-    throw new ApiError({
+    throw createApiError({
       status: 400,
       code: 'VALIDATION_ERROR',
       message: 'Validation failed',

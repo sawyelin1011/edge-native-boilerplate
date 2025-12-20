@@ -2,7 +2,7 @@ import { createMiddleware } from 'hono/factory'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 
 import type { Bindings, Variables } from '../index'
-import { ApiError } from '../lib/http/errors'
+import { createApiError } from '../lib/http/errors'
 import { authProvider } from '../modules/auth/provider'
 import { hasPermission, type Permission } from '../modules/auth/rbac'
 
@@ -19,7 +19,7 @@ export const authMiddleware = createMiddleware<{ Bindings: Bindings; Variables: 
   )
 
   if (!result.ok) {
-    throw new ApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Unauthorized' })
+    throw createApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Unauthorized' })
   }
 
   c.set('user', result.user)
@@ -80,11 +80,11 @@ export function requirePermission(permission: Permission) {
   return createMiddleware<{ Bindings: Bindings; Variables: Variables }>(async (c, next) => {
     const user = c.get('user')
     if (!user) {
-      throw new ApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Unauthorized' })
+      throw createApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Unauthorized' })
     }
 
     if (!hasPermission(user.role, permission)) {
-      throw new ApiError({ status: 403, code: 'FORBIDDEN', message: 'Forbidden' })
+      throw createApiError({ status: 403, code: 'FORBIDDEN', message: 'Forbidden' })
     }
 
     await next()

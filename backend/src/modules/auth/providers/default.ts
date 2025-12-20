@@ -1,5 +1,5 @@
 import type { AuthProvider, AuthContext, AuthUser } from '../types'
-import { ApiError } from '../../../lib/http/errors'
+import { createApiError } from '../../../lib/http/errors'
 import { hashPassword, verifyPassword } from '../../../lib/password'
 import { createJWT, verifyJWT } from '../../../lib/jwt'
 import { createSession, deleteSession, getSession, rotateSession } from '../session'
@@ -41,7 +41,7 @@ export const defaultAuthProvider: AuthProvider = {
   async register(ctx, params) {
     const existing = await findUserByEmail(ctx.db, params.email)
     if (existing) {
-      throw new ApiError({ status: 409, code: 'CONFLICT', message: 'User already exists' })
+      throw createApiError({ status: 409, code: 'CONFLICT', message: 'User already exists' })
     }
 
     const passwordHash = await hashPassword(params.password)
@@ -81,12 +81,12 @@ export const defaultAuthProvider: AuthProvider = {
   async login(ctx, params) {
     const user = await findUserForLoginByEmail(ctx.db, params.email)
     if (!user || !user.passwordHash) {
-      throw new ApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Invalid credentials' })
+      throw createApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Invalid credentials' })
     }
 
     const ok = await verifyPassword({ password: params.password, storedHash: user.passwordHash })
     if (!ok) {
-      throw new ApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Invalid credentials' })
+      throw createApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Invalid credentials' })
     }
 
     const authUser = toAuthUser(user)
@@ -167,12 +167,12 @@ export const defaultAuthProvider: AuthProvider = {
     })
 
     if (!rotated) {
-      throw new ApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Invalid refresh token' })
+      throw createApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Invalid refresh token' })
     }
 
     const user = await findUserById(ctx.db, rotated.userId)
     if (!user) {
-      throw new ApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Invalid refresh token' })
+      throw createApiError({ status: 401, code: 'UNAUTHORIZED', message: 'Invalid refresh token' })
     }
 
     const authUser = toAuthUser(user)
