@@ -53,7 +53,7 @@ api.post('/users', authMiddleware, requirePermission('users:write'), csrfMiddlew
     passwordHash
   })
 
-  return c.json(ok({ requestId: c.get('requestId'), data: user }), { status: 201 })
+  return c.json(ok({ requestId: c.get('requestId'), data: user }), 201)
 })
 
 api.get('/users/:id', authMiddleware, requirePermission('users:read'), async (c) => {
@@ -73,7 +73,7 @@ api.get('/posts', async (c) => {
 api.post('/posts', authMiddleware, requirePermission('posts:write'), csrfMiddleware, async (c) => {
   const body = await parseJson(c, CreatePostSchema)
   const post = await createPost(c.get('db'), body)
-  return c.json(ok({ requestId: c.get('requestId'), data: post }), { status: 201 })
+  return c.json(ok({ requestId: c.get('requestId'), data: post }), 201)
 })
 
 api.get('/products', async (c) => {
@@ -84,7 +84,7 @@ api.get('/products', async (c) => {
 api.post('/products', authMiddleware, requirePermission('products:write'), csrfMiddleware, async (c) => {
   const body = await parseJson(c, CreateProductSchema)
   const product = await createProduct(c.get('db'), body)
-  return c.json(ok({ requestId: c.get('requestId'), data: product }), { status: 201 })
+  return c.json(ok({ requestId: c.get('requestId'), data: product }), 201)
 })
 
 export { api as apiRoutesV1 }

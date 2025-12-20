@@ -1,15 +1,15 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import type { Database } from '../client'
+import type { DbExecutor } from '../client'
 import { products } from '../../lib/schema'
 
 const nowIso = () => new Date().toISOString()
 
-export async function listProducts(db: Database) {
+export async function listProducts(db: DbExecutor) {
   return db.select().from(products).where(isNull(products.deletedAt)).all()
 }
 
 export async function createProduct(
-  db: Database,
+  db: DbExecutor,
   params: { name: string; description?: string; price: number; sku: string; stock: number }
 ) {
   const [product] = await db
@@ -28,7 +28,7 @@ export async function createProduct(
   return product
 }
 
-export async function softDeleteProduct(db: Database, productId: string) {
+export async function softDeleteProduct(db: DbExecutor, productId: string) {
   await db
     .update(products)
     .set({ deletedAt: nowIso(), updatedAt: nowIso() })

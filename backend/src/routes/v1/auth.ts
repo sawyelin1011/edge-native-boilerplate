@@ -73,7 +73,7 @@ auth.post('/register', async (c) => {
         csrfToken: result.csrfToken ?? null
       }
     }),
-    { status: 201 }
+    201
   )
 })
 

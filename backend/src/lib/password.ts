@@ -13,7 +13,7 @@ const DERIVED_KEY_BITS = 256
 
 export async function hashPassword(password: string, options?: { iterations?: number }): Promise<string> {
   const iterations = options?.iterations ?? DEFAULT_ITERATIONS
-  const salt = new Uint8Array(SALT_BYTES)
+  const salt = new Uint8Array(new ArrayBuffer(SALT_BYTES))
   crypto.getRandomValues(salt)
 
   const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, [

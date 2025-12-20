@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 export type ErrorCode =
   | 'VALIDATION_ERROR'
@@ -10,11 +11,11 @@ export type ErrorCode =
   | 'INTERNAL_ERROR'
 
 export class ApiError extends Error {
-  readonly status: number
+  readonly status: ContentfulStatusCode
   readonly code: ErrorCode
   readonly details?: unknown
 
-  constructor(params: { status: number; code: ErrorCode; message: string; details?: unknown }) {
+  constructor(params: { status: ContentfulStatusCode; code: ErrorCode; message: string; details?: unknown }) {
     super(params.message)
     this.status = params.status
     this.code = params.code

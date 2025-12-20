@@ -118,7 +118,7 @@ app.notFound((c) => {
       message: 'The requested resource was not found',
       requestId: c.get('requestId')
     }),
-    { status: 404 }
+    404
   )
 })
 
@@ -134,7 +134,7 @@ app.onError((err, c) => {
         details: apiError.details,
         requestId
       }),
-      { status: apiError.status }
+      apiError.status
     )
   }
 
@@ -146,7 +146,7 @@ app.onError((err, c) => {
         details: err.details,
         requestId
       }),
-      { status: err.status }
+      err.status
     )
   }
 

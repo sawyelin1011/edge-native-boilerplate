@@ -1,5 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import type { Database } from '../client'
+import type { DbExecutor } from '../client'
 import { users } from '../../lib/schema'
 
 const nowIso = () => new Date().toISOString()
@@ -19,7 +19,7 @@ const userAuthColumns = {
   passwordHash: users.passwordHash
 }
 
-export async function findUserByEmail(db: Database, email: string) {
+export async function findUserByEmail(db: DbExecutor, email: string) {
   return db
     .select(userPublicColumns)
     .from(users)
@@ -27,7 +27,7 @@ export async function findUserByEmail(db: Database, email: string) {
     .get()
 }
 
-export async function findUserForLoginByEmail(db: Database, email: string) {
+export async function findUserForLoginByEmail(db: DbExecutor, email: string) {
   return db
     .select(userAuthColumns)
     .from(users)
@@ -35,7 +35,7 @@ export async function findUserForLoginByEmail(db: Database, email: string) {
     .get()
 }
 
-export async function findUserById(db: Database, id: string) {
+export async function findUserById(db: DbExecutor, id: string) {
   return db
     .select(userPublicColumns)
     .from(users)
@@ -43,11 +43,11 @@ export async function findUserById(db: Database, id: string) {
     .get()
 }
 
-export async function listUsers(db: Database) {
+export async function listUsers(db: DbExecutor) {
   return db.select(userPublicColumns).from(users).where(isNull(users.deletedAt)).all()
 }
 
-export async function createUser(db: Database, params: { email: string; name: string; role: string; passwordHash: string }) {
+export async function createUser(db: DbExecutor, params: { email: string; name: string; role: string; passwordHash: string }) {
   const [user] = await db
     .insert(users)
     .values({
@@ -63,7 +63,7 @@ export async function createUser(db: Database, params: { email: string; name: st
   return user
 }
 
-export async function updateUserLastLogin(db: Database, userId: string) {
+export async function updateUserLastLogin(db: DbExecutor, userId: string) {
   await db
     .update(users)
     .set({
@@ -73,7 +73,7 @@ export async function updateUserLastLogin(db: Database, userId: string) {
     .run()
 }
 
-export async function softDeleteUser(db: Database, userId: string) {
+export async function softDeleteUser(db: DbExecutor, userId: string) {
   await db
     .update(users)
     .set({

@@ -97,7 +97,7 @@ storage.put('/upload/:key', async (c) => {
     }
   })
 
-  return c.json(ok({ requestId: c.get('requestId'), data: { key } }), { status: 201 })
+  return c.json(ok({ requestId: c.get('requestId'), data: { key } }), 201)
 })
 
 storage.get('/objects/:key', async (c) => {
