@@ -28,7 +28,19 @@ const RawEnvSchema = z.object({
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(120),
 
   STORAGE_ENABLED: BooleanSchema.optional().default('false'),
-  STORAGE_SIGNING_SECRET: z.string().min(16).optional()
+  STORAGE_SIGNING_SECRET: z.string().min(16).optional(),
+
+  DEFAULT_CURRENCY: z.string().min(3).max(8).default('USD'),
+  DATA_ENCRYPTION_KEY: z.string().min(16).optional(),
+
+  // Optional: allow running without plugin DB bootstrap by reading from env
+  DHRU_API_BASE_URL: z.string().url().optional(),
+  DHRU_USERNAME: z.string().min(1).optional(),
+  DHRU_API_KEY: z.string().min(1).optional(),
+
+  NOWPAYMENTS_API_KEY: z.string().min(10).optional(),
+  NOWPAYMENTS_IPN_SECRET: z.string().min(10).optional(),
+  NOWPAYMENTS_API_BASE_URL: z.string().url().optional()
 })
 
 type RawEnv = z.infer<typeof RawEnvSchema>
@@ -63,6 +75,24 @@ export type AppConfig = {
     enabled: boolean
     signingSecret: string | null
   }
+  gsmflow: {
+    defaultCurrency: string
+    encryptionKey: string
+    providers: {
+      dhru: null | {
+        apiBaseUrl: string
+        username: string
+        apiKey: string
+      }
+    }
+    payments: {
+      nowpayments: null | {
+        apiKey: string
+        ipnSecret: string
+        apiBaseUrl: string
+      }
+    }
+  }
 }
 
 let cached: AppConfig | null = null
@@ -78,6 +108,9 @@ function parseCorsOrigins(input: string | undefined): string[] | '*' {
 }
 
 function normalize(env: RawEnv): AppConfig {
+  const dhruConfigured = Boolean(env.DHRU_API_BASE_URL || env.DHRU_USERNAME || env.DHRU_API_KEY)
+  const nowPaymentsConfigured = Boolean(env.NOWPAYMENTS_API_KEY || env.NOWPAYMENTS_IPN_SECRET)
+
   const config: AppConfig = {
     environment: env.ENVIRONMENT,
     logLevel: env.LOG_LEVEL,
@@ -107,6 +140,40 @@ function normalize(env: RawEnv): AppConfig {
     storage: {
       enabled: env.STORAGE_ENABLED,
       signingSecret: env.STORAGE_SIGNING_SECRET ?? null
+    },
+    gsmflow: {
+      defaultCurrency: env.DEFAULT_CURRENCY,
+      encryptionKey: env.DATA_ENCRYPTION_KEY ?? env.SESSION_SECRET,
+      providers: {
+        dhru: dhruConfigured
+          ? {
+              apiBaseUrl: env.DHRU_API_BASE_URL ?? '',
+              username: env.DHRU_USERNAME ?? '',
+              apiKey: env.DHRU_API_KEY ?? ''
+            }
+          : null
+      },
+      payments: {
+        nowpayments: nowPaymentsConfigured
+          ? {
+              apiKey: env.NOWPAYMENTS_API_KEY ?? '',
+              ipnSecret: env.NOWPAYMENTS_IPN_SECRET ?? '',
+              apiBaseUrl: env.NOWPAYMENTS_API_BASE_URL ?? 'https://api.nowpayments.io'
+            }
+          : null
+      }
+    }
+  }
+
+  if (dhruConfigured) {
+    if (!config.gsmflow.providers.dhru?.apiBaseUrl || !config.gsmflow.providers.dhru?.username || !config.gsmflow.providers.dhru?.apiKey) {
+      throw new Error('DHRU provider env config is incomplete (DHRU_API_BASE_URL, DHRU_USERNAME, DHRU_API_KEY)')
+    }
+  }
+
+  if (nowPaymentsConfigured) {
+    if (!config.gsmflow.payments.nowpayments?.apiKey || !config.gsmflow.payments.nowpayments?.ipnSecret) {
+      throw new Error('NOWPayments env config is incomplete (NOWPAYMENTS_API_KEY, NOWPAYMENTS_IPN_SECRET)')
     }
   }
 
@@ -117,6 +184,10 @@ function normalize(env: RawEnv): AppConfig {
 
     if (!config.auth.session.secret || config.auth.session.secret.length < 32) {
       throw new Error('SESSION_SECRET must be at least 32 characters in production')
+    }
+
+    if (!config.gsmflow.encryptionKey || config.gsmflow.encryptionKey.length < 32) {
+      throw new Error('DATA_ENCRYPTION_KEY must be at least 32 characters in production')
     }
 
     if (config.storage.enabled && (!config.storage.signingSecret || config.storage.signingSecret.length < 32)) {

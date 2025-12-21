@@ -1,6 +1,6 @@
 # edge-native-boilerplate — Implementation Status
 
-Last updated: 2025-12-20
+Last updated: 2025-12-21
 
 This folder is a lightweight, repo-local way to track template completeness and what has already been implemented so future work can continue without re-auditing the whole codebase.
 
@@ -37,11 +37,25 @@ This repo is now a production-oriented Cloudflare Workers backend boilerplate (V
   - CSRF protection for session-based auth (header token): `backend/src/middleware/csrf.ts`
 - **API design:**
   - Versioned routing at `/api/v1/*`
+  - `/api/*` also routes to the same versioned handlers for convenience
   - Consistent response envelope: `{ success, data|error, requestId }`
   - Health check: `GET /health`
 - **Optional object storage (R2):** `backend/src/routes/v1/storage.ts`
   - Signed uploads + signed downloads
   - Module is runtime-optional via config; `BUCKET` binding is typed optional.
+
+### GSMFlow platform layer (in progress)
+
+The repo now includes the beginnings of a GSMFlow-specific domain layer:
+
+- Roles + pricing model: `backend/src/gsmflow/pricing.ts`
+- Core schema + migration: `backend/src/lib/schema.ts`, `backend/migrations/0003_gsmflow_core.sql`
+- Provider + services sync (DHRU plugin): `backend/src/plugins/provider/dhru.ts`, `backend/src/gsmflow/syncServices.ts`
+- Orders lifecycle + refunds: `backend/src/gsmflow/orders.ts`
+- Payment gateway plugin (NOWPayments): `backend/src/plugins/payment/nowpayments.ts`
+- Admin endpoints for plugins/providers/settings: `backend/src/routes/v1/gsmflow/admin.ts`
+
+Not implemented yet (tracked in checklist): BetterAuth integration, password reset flows, full 2FA (TOTP + SMS provider), full CMS.
 
 ## Known constraints
 

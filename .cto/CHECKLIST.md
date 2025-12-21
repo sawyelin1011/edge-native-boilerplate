@@ -61,7 +61,56 @@ This is the living checklist for the `backend/` package. It is intended to match
 
 - [x] REST-ish resource structure
 - [x] Versioned routing (`/api/v1`)
+- [x] `/api/*` aliases to versioned routes
 - [x] Health check endpoint
+
+## GSMFlow platform layer
+
+### Multi-role system
+
+- [x] Roles: USER / RESELLER / DISTRIBUTOR / WEB_OWNER / ADMIN
+- [x] Role-based pricing calculation utility
+- [x] Balance field in DB
+- [ ] Email verification sending (requires email provider plugin)
+- [x] Email verification token + verify endpoint (KV)
+- [ ] Password reset flow
+- [ ] 2FA (TOTP)
+- [ ] 2FA (SMS) (requires SMS provider plugin)
+
+### Providers & services
+
+- [x] Provider schema (`service_providers`)
+- [x] Services schema (`services`) with provider mapping
+- [x] Provider plugin registry
+- [x] DHRU provider plugin (edge-native fetch)
+- [x] Service sync route (admin)
+- [ ] Automatic failover between providers for identical services (requires service mapping across providers)
+
+### Orders
+
+- [x] Order schema (`orders`)
+- [x] Pending -> Processing -> Completed/Failed
+- [x] Refund handling (failed/cancelled)
+- [x] Public order status endpoint
+
+### Payments
+
+- [x] Payment schema (`payments`)
+- [x] NOWPayments plugin (invoice + webhook signature verification)
+- [x] Invoice creation endpoint
+- [x] Webhook handler updates balance
+- [ ] Multi-gateway payment plugin catalog (Stripe/PayPal etc.)
+
+### Plugins
+
+- [x] Plugin registry + config validation
+- [x] Plugins table (`plugins`) for enable/disable + config
+
+### CMS
+
+- [x] Site settings table (`site_settings`) + admin endpoints
+- [ ] CMS pages + content versioning
+- [ ] Asset management beyond signed upload/download
 
 ## Optional storage module
 

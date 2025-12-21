@@ -27,6 +27,17 @@ export interface Env {
 
   STORAGE_ENABLED?: string
   STORAGE_SIGNING_SECRET?: string
+
+  DEFAULT_CURRENCY?: string
+  DATA_ENCRYPTION_KEY?: string
+
+  DHRU_API_BASE_URL?: string
+  DHRU_USERNAME?: string
+  DHRU_API_KEY?: string
+
+  NOWPAYMENTS_API_KEY?: string
+  NOWPAYMENTS_IPN_SECRET?: string
+  NOWPAYMENTS_API_BASE_URL?: string
 }
 
 export {}

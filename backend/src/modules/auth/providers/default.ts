@@ -6,12 +6,28 @@ import { createSession, deleteSession, getSession, rotateSession } from '../sess
 import { issueRefreshToken, revokeRefreshToken, rotateRefreshToken } from '../refreshToken'
 import { createUser, findUserByEmail, findUserById, findUserForLoginByEmail, updateUserLastLogin } from '../../../db/repositories/users'
 
+function toRole(role: string): AuthUser['role'] {
+  const normalized = role.trim().toUpperCase()
+
+  if (normalized === 'ADMIN') return 'ADMIN'
+  if (normalized === 'WEB_OWNER') return 'WEB_OWNER'
+  if (normalized === 'DISTRIBUTOR') return 'DISTRIBUTOR'
+  if (normalized === 'RESELLER') return 'RESELLER'
+  if (normalized === 'USER') return 'USER'
+
+  // Backwards compatibility
+  if (role === 'admin') return 'ADMIN'
+  if (role === 'user') return 'USER'
+
+  return 'USER'
+}
+
 function toAuthUser(user: { id: string; email: string; name: string; role: string }): AuthUser {
   return {
     id: user.id,
     email: user.email,
     name: user.name,
-    role: user.role === 'admin' ? 'admin' : 'user'
+    role: toRole(user.role)
   }
 }
 
@@ -50,7 +66,7 @@ export const defaultAuthProvider: AuthProvider = {
       const created = await createUser(tx, {
         email: params.email,
         name: params.name,
-        role: 'user',
+        role: 'USER',
         passwordHash
       })
 

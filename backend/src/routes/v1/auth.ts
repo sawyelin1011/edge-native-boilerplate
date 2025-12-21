@@ -8,6 +8,8 @@ import { parseJson } from '../../lib/validation'
 import { authMiddleware } from '../../middleware/auth'
 import { authProvider } from '../../modules/auth/provider'
 import { createApiError } from '../../lib/http/errors'
+import { randomHex } from '../../lib/crypto'
+import { setUserEmailVerified } from '../../db/repositories/users'
 
 const RefreshCookieName = 'rt'
 
@@ -41,6 +43,9 @@ auth.post('/register', async (c) => {
     body
   )
 
+  const emailVerificationToken = randomHex(32)
+  await c.env.KV.put(`email_verify:${emailVerificationToken}`, result.user.id, { expirationTtl: 24 * 60 * 60 })
+
   if (config.auth.session.enabled && result.sessionId) {
     setCookie(c, config.auth.session.cookieName, result.sessionId, {
       httpOnly: true,
@@ -70,7 +75,8 @@ auth.post('/register', async (c) => {
           refreshToken: result.refreshToken,
           expiresInSeconds: config.auth.jwt.accessTtlSeconds
         },
-        csrfToken: result.csrfToken ?? null
+        csrfToken: result.csrfToken ?? null,
+        emailVerificationToken: config.environment === 'production' ? null : emailVerificationToken
       }
     }),
     201
@@ -162,6 +168,24 @@ auth.post('/refresh', async (c) => {
       }
     })
   )
+})
+
+const VerifyEmailSchema = z.object({
+  token: z.string().min(10)
+})
+
+auth.post('/verify-email', async (c) => {
+  const body = await parseJson(c, VerifyEmailSchema)
+  const userId = await c.env.KV.get(`email_verify:${body.token}`)
+
+  if (!userId) {
+    throw createApiError({ status: 400, code: 'VALIDATION_ERROR', message: 'Invalid or expired verification token' })
+  }
+
+  await setUserEmailVerified(c.get('db'), { userId })
+  await c.env.KV.delete(`email_verify:${body.token}`)
+
+  return c.json(ok({ requestId: c.get('requestId'), data: { verified: true } }))
 })
 
 auth.post('/logout', authMiddleware, async (c) => {

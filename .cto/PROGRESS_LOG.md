@@ -17,3 +17,14 @@ This is a lightweight running log intended for maintainers.
 - Standardized response envelope and error handling.
 - Added optional R2 storage routes for signed upload/download.
 - Added `.cto/*` tracking docs and updated repository documentation.
+
+## 2025-12-21
+
+- Extended domain model + migrations for GSMFlow: providers, services, orders, payments, plugins, site settings.
+- Introduced GSMFlow role model (USER/RESELLER/DISTRIBUTOR/WEB_OWNER/ADMIN) and role-based pricing calculation.
+- Implemented edge-native plugin registry + manager (functional, no classes).
+- Implemented DHRU provider plugin + admin service sync endpoint.
+- Implemented order lifecycle endpoints (create/place/status/public-status) with refunds.
+- Implemented NOWPayments payment gateway plugin + invoice + webhook handling.
+- Added email verification token issuance on register + verify endpoint (KV-based).
+- Switched JWT implementation to the edge-compatible `jose` library.

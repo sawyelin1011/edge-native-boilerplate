@@ -1,15 +1,18 @@
 import { Miniflare } from 'miniflare'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
+
+const here = dirname(fileURLToPath(import.meta.url))
 
 function readMigration(name: string) {
-  return readFileSync(resolve(__dirname, `../../../migrations/${name}`), 'utf8')
+  return readFileSync(resolve(here, `../../../migrations/${name}`), 'utf8')
 }
 
 describe('backend (Miniflare)', () => {
   const mf = new Miniflare({
-    scriptPath: resolve(__dirname, '../../index.ts'),
+    scriptPath: resolve(here, '../../index.ts'),
     modules: true,
     compatibilityDate: '2024-12-21',
     d1Databases: { DB: 'test-db' },
@@ -19,6 +22,7 @@ describe('backend (Miniflare)', () => {
       ENVIRONMENT: 'test',
       JWT_SECRET: 'test-jwt-secret-32-characters-minimum',
       SESSION_SECRET: 'test-session-secret-32-characters-minimum',
+      DATA_ENCRYPTION_KEY: 'test-encryption-key-32-characters-minimum',
       RATE_LIMIT_ENABLED: 'false'
     }
   })
@@ -27,6 +31,7 @@ describe('backend (Miniflare)', () => {
     const db = await mf.getD1Database('DB')
     await db.exec(readMigration('0001_initial.sql'))
     await db.exec(readMigration('0002_auth_soft_delete.sql'))
+    await db.exec(readMigration('0003_gsmflow_core.sql'))
   })
 
   afterAll(async () => {

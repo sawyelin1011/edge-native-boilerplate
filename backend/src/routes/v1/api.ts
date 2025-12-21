@@ -17,7 +17,7 @@ const api = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 const CreateUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1).max(120),
-  role: z.enum(['admin', 'user']).default('user'),
+  role: z.enum(['USER', 'RESELLER', 'DISTRIBUTOR', 'WEB_OWNER', 'ADMIN']).default('USER'),
   password: z.string().min(8).max(256)
 })
 

@@ -10,7 +10,6 @@ import { rateLimit } from './middleware/rateLimit'
 import { fromZodError, isApiError } from './lib/http/errors'
 import { fail } from './lib/http/response'
 
-import { apiRoutes } from './routes/api'
 import { authRoutes } from './routes/auth'
 import { v1Routes } from './routes/v1'
 
@@ -45,6 +44,17 @@ export type Bindings = {
 
   STORAGE_ENABLED?: string
   STORAGE_SIGNING_SECRET?: string
+
+  DEFAULT_CURRENCY?: string
+  DATA_ENCRYPTION_KEY?: string
+
+  DHRU_API_BASE_URL?: string
+  DHRU_USERNAME?: string
+  DHRU_API_KEY?: string
+
+  NOWPAYMENTS_API_KEY?: string
+  NOWPAYMENTS_IPN_SECRET?: string
+  NOWPAYMENTS_API_BASE_URL?: string
 }
 
 export type Variables = {
@@ -107,8 +117,10 @@ app.get('/health', (c) => {
 
 app.route('/api/v1', v1Routes)
 
+// Primary public API base (aliases /api/* to the same versioned routes)
+app.route('/api', v1Routes)
+
 // Backwards-compatible aliases
-app.route('/api', apiRoutes)
 app.route('/auth', authRoutes)
 
 app.notFound((c) => {

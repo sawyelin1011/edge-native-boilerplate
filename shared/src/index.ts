@@ -1,6 +1,6 @@
 export type Environment = 'development' | 'test' | 'production'
 
-export type Role = 'user' | 'admin'
+export type Role = 'USER' | 'RESELLER' | 'DISTRIBUTOR' | 'WEB_OWNER' | 'ADMIN'
 
 export type ApiError = {
   code: string

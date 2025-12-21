@@ -9,6 +9,11 @@ const userPublicColumns = {
   email: users.email,
   name: users.name,
   role: users.role,
+  balance: users.balance,
+  isEmailVerified: users.isEmailVerified,
+  emailVerifiedAt: users.emailVerifiedAt,
+  twoFactorEnabled: users.twoFactorEnabled,
+  phone: users.phone,
   deletedAt: users.deletedAt,
   createdAt: users.createdAt,
   updatedAt: users.updatedAt
@@ -81,5 +86,32 @@ export async function softDeleteUser(db: DbExecutor, userId: string) {
       updatedAt: nowIso()
     })
     .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .run()
+}
+
+export async function addUserBalance(db: DbExecutor, params: { userId: string; amount: number }) {
+  const user = await db
+    .select({ balance: users.balance })
+    .from(users)
+    .where(and(eq(users.id, params.userId), isNull(users.deletedAt)))
+    .get()
+
+  if (!user) return null
+
+  const nextBalance = user.balance + params.amount
+  await db
+    .update(users)
+    .set({ balance: nextBalance, updatedAt: nowIso() })
+    .where(and(eq(users.id, params.userId), isNull(users.deletedAt)))
+    .run()
+
+  return nextBalance
+}
+
+export async function setUserEmailVerified(db: DbExecutor, params: { userId: string }) {
+  await db
+    .update(users)
+    .set({ isEmailVerified: true, emailVerifiedAt: nowIso(), updatedAt: nowIso() })
+    .where(and(eq(users.id, params.userId), isNull(users.deletedAt)))
     .run()
 }
