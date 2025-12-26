@@ -1,220 +1,117 @@
-# Cloudflare Fullstack Template
+# GSMFlow - Edge-Native Platform System
 
-Production-ready fullstack template for Cloudflare Workers (backend) + Pages (frontend) with type-safe configuration.
+## Phase 2: Platform Core Implementation
 
-## 🏗️ Architecture
+A production-grade, edge-native monorepo for GSMFlow, a multi-tenant digital services & GSM automation platform.
 
-- **Backend**: Cloudflare Workers with Hono.js
-- **Frontend**: Cloudflare Pages (framework agnostic)
-- **Database**: D1 SQLite with Drizzle ORM
-- **Storage**: KV for sessions, R2 for files
-- **Type Safety**: Shared types between frontend/backend
-- **Development**: Miniflare for local development
-
-## 📁 Project Structure
+### Architecture
 
 ```
-cloudflare-fullstack-template/
-├── backend/                 # Cloudflare Workers API
-│   ├── src/
-│   │   ├── index.ts        # Worker entry point
-│   │   ├── routes/         # API routes
-│   │   ├── middleware/     # Auth, CORS, etc.
-│   │   ├── lib/           # Database, utilities
-│   │   └── types/         # Backend types
-│   ├── migrations/        # D1 database migrations
-│   ├── wrangler.toml      # Workers configuration
-│   ├── drizzle.config.ts  # Drizzle ORM config
-│   └── package.json
-├── frontend/               # Cloudflare Pages
-│   ├── src/
-│   │   ├── pages/         # Page components
-│   │   ├── components/    # UI components
-│   │   ├── lib/          # API client, utilities
-│   │   └── types/        # Frontend types
-│   ├── public/           # Static assets
-│   ├── functions/        # Pages Functions (optional)
-│   └── package.json
-├── shared/                # Shared types and utilities
-│   ├── types/
-│   │   ├── api.ts        # API request/response types
-│   │   ├── database.ts   # Database schema types
-│   │   └── index.ts      # Exported types
-│   └── package.json
-├── env.d.ts              # Global environment types
-└── package.json          # Root workspace
+gsmflow/
+├── apps/
+│   ├── api/           # Edge-native API (Hono + tRPC)
+│   ├── admin/         # Admin Dashboard (Next.js App Router)
+│   └── storefront/    # Storefront (Next.js App Router)
+│
+├── packages/
+│   ├── core/              # Domain layer (pure TypeScript)
+│   ├── trpc-contracts/    # tRPC routers, procedures, permissions
+│   ├── adapters/
+│   │   ├── base/          # Adapter interfaces
+│   │   ├── cloudflare/    # Cloudflare Workers adapter
+│   │   ├── vercel-edge/   # Vercel Edge adapter
+│   │   └── deno/          # Deno Deploy adapter
+│   ├── plugin-system/     # Plugin architecture
+│   ├── sdk/               # Client SDK
+│   └── shared/            # Shared types & utilities
+│
+└── turbo.json         # Turborepo configuration
 ```
 
-## 🚀 Quick Start
+### Runtime Targets
 
-### 1. Install Dependencies
-```bash
-# Install all dependencies
-bun install
+- ✅ **Cloudflare Workers** (Primary)
+- ✅ **Vercel Edge Functions**
+- ✅ **Deno Deploy**
 
-# Or install per workspace
-bun install --filter backend
-bun install --filter frontend
-bun install --filter shared
+### Platform Core Features
 
-# Install all at once
-bun run install:all
-```
+#### 1. Tenant System
+- Multi-tenant by default
+- Tenant isolation (wallets, pricing, users, API keys)
+- Strict cross-tenant access prevention
 
-### 2. Setup Database
-```bash
-# Create D1 database
-npm run db:create
+#### 2. Role & Permission Engine
+- Data-driven roles (not enums)
+- Default templates: Super Admin, Admin, Distributor, Reseller, Web Owner, End Customer
+- Scope-based permissions (actions, pricing, API access)
+- Dynamic permission checking via tRPC
 
-# Generate and apply migrations
-npm run db:generate
-npm run db:migrate
-```
+#### 3. Pricing & Profit Engine
+- Base price from provider or manual
+- Role-based markup with configurable ranges
+- Per-order profit calculation
+- Full audit history
 
-### 3. Development
-```bash
-# Start both backend and frontend
-bun run dev
+#### 4. Wallet System
+- Wallet per tenant & role
+- Atomic operations: credit, debit, lock, refund
+- Order wallet lock before processing
+- Complete audit trail
 
-# Or start individually
-bun run dev:backend
-bun run dev:frontend
-```
+#### 5. Provider Abstraction
+- Plugin-based provider system
+- No hard-coded provider assumptions
+- Support for IMEI, remote files, server tasks, digital services
 
-### 4. Deploy
-```bash
-# Deploy backend (Workers)
-bun run deploy:backend
+#### 6. Order Lifecycle Engine
+- States: created → queued → processing → success | failed | refunded
+- Async processing with callbacks/polling
+- Per-role order visibility
+- Immutable history
 
-# Deploy frontend (Pages)
-bun run deploy:frontend
-
-# Deploy both
-bun run deploy
-```
-
-## 📋 Available Scripts
-
-### Root Scripts
-- `bun run dev` - Start both backend and frontend
-- `bun run build` - Build both projects
-- `bun run deploy` - Deploy both to Cloudflare
-- `bun run type-check` - Type check all workspaces
-
-### Backend Scripts
-- `bun run dev:backend` - Start Workers dev server
-- `bun run build:backend` - Build Workers
-- `bun run deploy:backend` - Deploy to Cloudflare Workers
-- `bun run db:create` - Create D1 database
-- `bun run db:generate` - Generate migrations
-- `bun run db:migrate` - Apply migrations locally
-- `bun run db:migrate:prod` - Apply migrations to production
-
-### Frontend Scripts
-- `bun run dev:frontend` - Start Pages dev server
-- `bun run build:frontend` - Build for production
-- `bun run deploy:frontend` - Deploy to Cloudflare Pages
-
-## 🔧 Configuration
-
-### Environment Variables
-
-#### Backend (.dev.vars)
-```bash
-# Database
-DATABASE_ID=your-d1-database-id
-
-# Authentication
-JWT_SECRET=your-jwt-secret
-SESSION_SECRET=your-session-secret
-
-# External APIs
-EXTERNAL_API_KEY=your-api-key
-```
-
-#### Production Secrets
-```bash
-# Set production secrets
-wrangler secret put JWT_SECRET
-wrangler secret put SESSION_SECRET
-wrangler secret put EXTERNAL_API_KEY
-```
-
-### Wrangler Configuration
-
-The `wrangler.toml` uses the latest compatibility date and features:
-- Compatibility date: 2024-12-21 (latest)
-- Node.js compatibility enabled
-- D1, KV, R2 bindings configured
-- Local development optimized
-
-## 🛠️ Tech Stack
-
-### Backend
-- **Runtime**: Cloudflare Workers
-- **Framework**: Hono.js
-- **Database**: D1 SQLite + Drizzle ORM
-- **Storage**: KV (sessions) + R2 (files)
-- **Auth**: JWT + Sessions
-- **Validation**: Zod schemas
-
-### Frontend
-- **Platform**: Cloudflare Pages
-- **Framework**: Framework agnostic (React/Vue/Svelte)
-- **API Client**: Type-safe fetch wrapper
-- **State**: Framework-specific state management
-
-### Development
-- **Local Runtime**: Miniflare
-- **Type Safety**: TypeScript + shared types
-- **Testing**: Vitest
-- **Linting**: ESLint + Prettier
-
-## 🔐 Security Features
-
-- JWT authentication with refresh tokens
-- CORS configuration
-- Rate limiting
-- Security headers
-- Input validation with Zod
-- SQL injection protection (Drizzle ORM)
-
-## 📊 Performance Features
-
-- Edge caching with KV
-- Static asset optimization
-- Database connection pooling
-- Streaming responses
-- Compression middleware
-
-## 🧪 Testing
+### Quick Start
 
 ```bash
-# Run all tests
-bun test
+# Install dependencies
+pnpm install
 
-# Test backend
-bun run test:backend
+# Build all packages
+pnpm build
 
-# Test frontend
-bun run test:frontend
+# Start development
+pnpm dev:api      # API on port 8787
+pnpm dev:admin    # Admin on port 3000
+pnpm dev:storefront # Storefront on port 3001
 ```
 
-## 📚 Documentation
+### Frontend Development
 
-Each workspace has its own README with specific setup instructions:
-- [Backend README](./backend/README.md)
-- [Frontend README](./frontend/README.md)
-- [Shared Types README](./shared/README.md)
+Frontend exists **only** to:
+- Test APIs
+- Manage platform entities
+- Validate permissions
+- Operate system manually
 
-## 🤝 Contributing
+See `frontend-setup.md` for implementation guides.
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+### Phase 2 Status
 
-## 📄 License
+| Component | Status | Description |
+|-----------|--------|-------------|
+| Monorepo Structure | ✅ | Turborepo + pnpm workspaces |
+| Runtime Adapters | ✅ | Cloudflare, Vercel Edge, Deno |
+| Core Domain | ✅ | Pure TypeScript, runtime-agnostic |
+| tRPC Contracts | ✅ | Routers, procedures, permissions |
+| Plugin System | ✅ | Foundation, extensible |
+| Tenant System | ⏳ | Multi-tenant architecture |
+| Role Engine | ⏳ | Data-driven roles |
+| Pricing Engine | ⏳ | Markup & profit flow |
+| Wallet System | ⏳ | Atomic operations |
+| Provider Abstraction | ⏳ | Plugin system |
+| Order Lifecycle | ⏳ | State machine |
+| API Keys | ⏳ | Scope-based permissions |
 
-MIT License - see [LICENSE](LICENSE) file for details.
+### License
+
+MIT
