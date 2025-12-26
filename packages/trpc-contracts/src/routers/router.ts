@@ -3,6 +3,13 @@
 
 import type { RequestContext } from '@gsmflow/core'
 import type { ProcedureContext } from '../procedures/types'
+import { healthRouter } from './health'
+import { authRouter } from './auth'
+import { userRouter } from './user'
+import { tenantRouter } from './tenant'
+import { walletRouter } from './wallet'
+import { orderRouter } from './order'
+import { pricingRouter } from './pricing'
 
 // ============================================================================
 // Router Types
@@ -136,6 +143,24 @@ export const authRouter: TRPCRouter = {
 export const tenantRouter: TRPCRouter = {
   name: 'tenant',
   routes: {
+    create: {
+      type: 'mutation',
+      input: {
+        name: 'string',
+        slug: 'string',
+        settings: 'object?',
+        metadata: 'object?',
+      },
+      handler: async (ctx) => {
+        return {
+          success: false,
+          error: {
+            code: 'NOT_IMPLEMENTED',
+            message: 'Tenant create not implemented in Phase 1',
+          },
+        }
+      },
+    },
     get: {
       type: 'query',
       input: {
@@ -143,7 +168,6 @@ export const tenantRouter: TRPCRouter = {
         slug: 'string?',
       },
       handler: async (ctx) => {
-        // Placeholder - Phase 2 implementation
         return {
           success: false,
           error: {
@@ -158,26 +182,53 @@ export const tenantRouter: TRPCRouter = {
       input: {
         limit: 'number?',
         offset: 'number?',
+        status: 'string?',
+        search: 'string?',
       },
       handler: async (ctx) => {
-        return { data: [], meta: { total: 0 } }
+        return { data: [], meta: { total: 0, requestId: ctx.ctx.requestContext?.requestId || 'unknown' } }
       },
     },
-    create: {
+    update: {
       type: 'mutation',
       input: {
-        name: 'string',
-        slug: 'string',
+        id: 'string',
+        name: 'string?',
+        status: 'string?',
       },
       handler: async (ctx) => {
-        // Placeholder - Phase 2 implementation
         return {
           success: false,
-          error: {
-            code: 'NOT_IMPLEMENTED',
-            message: 'Tenant create not implemented in Phase 1',
-          },
+          error: { code: 'NOT_IMPLEMENTED', message: 'Tenant update not implemented' },
         }
+      },
+    },
+    delete: {
+      type: 'mutation',
+      input: { id: 'string' },
+      handler: async (ctx) => {
+        return { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Tenant delete not implemented' } }
+      },
+    },
+    suspend: {
+      type: 'mutation',
+      input: { id: 'string', reason: 'string?' },
+      handler: async (ctx) => {
+        return { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Tenant suspend not implemented' } }
+      },
+    },
+    activate: {
+      type: 'mutation',
+      input: { id: 'string' },
+      handler: async (ctx) => {
+        return { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Tenant activate not implemented' } }
+      },
+    },
+    updateSettings: {
+      type: 'mutation',
+      input: { id: 'string', settings: 'object' },
+      handler: async (ctx) => {
+        return { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Tenant settings not implemented' } }
       },
     },
   },
@@ -192,27 +243,51 @@ export const userRouter: TRPCRouter = {
   routes: {
     get: {
       type: 'query',
-      input: {
-        id: 'string?',
-      },
+      input: { id: 'string?' },
       handler: async (ctx) => {
-        return {
-          success: false,
-          error: {
-            code: 'NOT_IMPLEMENTED',
-            message: 'User get not implemented in Phase 1',
-          },
-        }
+        return { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'User get not implemented' } }
       },
     },
     list: {
       type: 'query',
-      input: {
-        limit: 'number?',
-        offset: 'number?',
-      },
+      input: { limit: 'number?', offset: 'number?', role: 'string?', status: 'string?' },
       handler: async (ctx) => {
         return { data: [], meta: { total: 0 } }
+      },
+    },
+    create: {
+      type: 'mutation',
+      input: { email: 'string', name: 'string', role: 'string?', tenantId: 'string?' },
+      handler: async (ctx) => {
+        return { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'User create not implemented' } }
+      },
+    },
+    update: {
+      type: 'mutation',
+      input: { id: 'string', name: 'string?', role: 'string?', status: 'string?' },
+      handler: async (ctx) => {
+        return { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'User update not implemented' } }
+      },
+    },
+    delete: {
+      type: 'mutation',
+      input: { id: 'string' },
+      handler: async (ctx) => {
+        return { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'User delete not implemented' } }
+      },
+    },
+    suspend: {
+      type: 'mutation',
+      input: { id: 'string', reason: 'string?' },
+      handler: async (ctx) => {
+        return { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'User suspend not implemented' } }
+      },
+    },
+    activate: {
+      type: 'mutation',
+      input: { id: 'string' },
+      handler: async (ctx) => {
+        return { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'User activate not implemented' } }
       },
     },
   },
@@ -225,16 +300,70 @@ export const userRouter: TRPCRouter = {
 export const appRouter: TRPCRouter = {
   name: 'app',
   routes: {
+    // Health
     'health.check': healthRouter.routes.check,
+    'health.ping': healthRouter.routes.ping,
+    
+    // Auth
     'auth.register': authRouter.routes.register,
     'auth.login': authRouter.routes.login,
     'auth.me': authRouter.routes.me,
     'auth.logout': authRouter.routes.logout,
+    
+    // Tenant
+    'tenant.create': tenantRouter.routes.create,
     'tenant.get': tenantRouter.routes.get,
     'tenant.list': tenantRouter.routes.list,
-    'tenant.create': tenantRouter.routes.create,
+    'tenant.update': tenantRouter.routes.update,
+    'tenant.delete': tenantRouter.routes.delete,
+    'tenant.suspend': tenantRouter.routes.suspend,
+    'tenant.activate': tenantRouter.routes.activate,
+    'tenant.updateSettings': tenantRouter.routes.updateSettings,
+    
+    // User
     'user.get': userRouter.routes.get,
     'user.list': userRouter.routes.list,
+    'user.create': userRouter.routes.create,
+    'user.update': userRouter.routes.update,
+    'user.delete': userRouter.routes.delete,
+    
+    // Wallet
+    'wallet.get': walletRouter.routes.get,
+    'wallet.getByRole': walletRouter.routes.getByRole,
+    'wallet.list': walletRouter.routes.list,
+    'wallet.credit': walletRouter.routes.credit,
+    'wallet.debit': walletRouter.routes.debit,
+    'wallet.lock': walletRouter.routes.lock,
+    'wallet.unlock': walletRouter.routes.unlock,
+    'wallet.refund': walletRouter.routes.refund,
+    'wallet.history': walletRouter.routes.history,
+    'wallet.summary': walletRouter.routes.summary,
+    'wallet.transfer': walletRouter.routes.transfer,
+    
+    // Order
+    'order.create': orderRouter.routes.create,
+    'order.get': orderRouter.routes.get,
+    'order.getByNumber': orderRouter.routes.getByNumber,
+    'order.list': orderRouter.routes.list,
+    'order.myOrders': orderRouter.routes.myOrders,
+    'order.cancel': orderRouter.routes.cancel,
+    'order.refund': orderRouter.routes.refund,
+    'order.statistics': orderRouter.routes.statistics,
+    'order.timeline': orderRouter.routes.timeline,
+    'order.retry': orderRouter.routes.retry,
+    
+    // Pricing
+    'pricing.setBasePrice': pricingRouter.routes.setBasePrice,
+    'pricing.getBasePrice': pricingRouter.routes.getBasePrice,
+    'pricing.setMarkup': pricingRouter.routes.setMarkup,
+    'pricing.getMarkup': pricingRouter.routes.getMarkup,
+    'pricing.getMarkups': pricingRouter.routes.getMarkups,
+    'pricing.deleteMarkup': pricingRouter.routes.deleteMarkup,
+    'pricing.calculate': pricingRouter.routes.calculate,
+    'pricing.breakdown': pricingRouter.routes.breakdown,
+    'pricing.profit': pricingRouter.routes.profit,
+    'pricing.history': pricingRouter.routes.history,
+    'pricing.syncProvider': pricingRouter.routes.syncProvider,
   },
 }
 
