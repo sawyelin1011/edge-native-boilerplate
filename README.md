@@ -1,6 +1,6 @@
-# GSMFlow - Edge-Native Monorepo
+# GSMFlow - Edge-Native Platform System
 
-## Phase 1 Foundation
+## Phase 2: Platform Core Implementation
 
 A production-grade, edge-native monorepo for GSMFlow, a multi-tenant digital services & GSM automation platform.
 
@@ -30,18 +30,45 @@ gsmflow/
 
 ### Runtime Targets
 
-- ✅ **Cloudflare Workers**
+- ✅ **Cloudflare Workers** (Primary)
 - ✅ **Vercel Edge Functions**
 - ✅ **Deno Deploy**
 
-### Key Features
+### Platform Core Features
 
-- **Edge-First**: Built for V8-only Web APIs, no Node.js dependencies
-- **Runtime-Agnostic**: Switch runtime by changing adapter only
-- **Type-Safe**: tRPC for end-to-end type safety
-- **Plugin-Ready**: Extensible architecture with lifecycle hooks
-- **Multi-Tenant**: Tenant context injected at request level
-- **Policy-Based**: Role/permission system via policy interfaces
+#### 1. Tenant System
+- Multi-tenant by default
+- Tenant isolation (wallets, pricing, users, API keys)
+- Strict cross-tenant access prevention
+
+#### 2. Role & Permission Engine
+- Data-driven roles (not enums)
+- Default templates: Super Admin, Admin, Distributor, Reseller, Web Owner, End Customer
+- Scope-based permissions (actions, pricing, API access)
+- Dynamic permission checking via tRPC
+
+#### 3. Pricing & Profit Engine
+- Base price from provider or manual
+- Role-based markup with configurable ranges
+- Per-order profit calculation
+- Full audit history
+
+#### 4. Wallet System
+- Wallet per tenant & role
+- Atomic operations: credit, debit, lock, refund
+- Order wallet lock before processing
+- Complete audit trail
+
+#### 5. Provider Abstraction
+- Plugin-based provider system
+- No hard-coded provider assumptions
+- Support for IMEI, remote files, server tasks, digital services
+
+#### 6. Order Lifecycle Engine
+- States: created → queued → processing → success | failed | refunded
+- Async processing with callbacks/polling
+- Per-role order visibility
+- Immutable history
 
 ### Quick Start
 
@@ -58,27 +85,32 @@ pnpm dev:admin    # Admin on port 3000
 pnpm dev:storefront # Storefront on port 3001
 ```
 
-### Phase 1 Status
+### Frontend Development
 
-| Component | Status |
-|-----------|--------|
-| Monorepo structure | ✅ Complete |
-| Runtime adapters | ✅ Cloudflare, Vercel Edge, Deno |
-| tRPC contracts | ✅ Routers, procedures, permissions |
-| Core domain models | ✅ Interfaces, no implementation |
-| Policy system | ✅ Interfaces, empty implementation |
-| Plugin system | ✅ Foundation, no plugins |
-| API endpoints | ✅ Health only |
-| Admin frontend | ✅ Bootstrap only |
-| Storefront frontend | ✅ Bootstrap only |
+Frontend exists **only** to:
+- Test APIs
+- Manage platform entities
+- Validate permissions
+- Operate system manually
 
-### What's Next (Phase 2)
+See `frontend-setup.md` for implementation guides.
 
-- GSM services & IMEI logic
-- Pricing & markup rules
-- Provider integration
-- Wallet & order management
-- UI components & features
+### Phase 2 Status
+
+| Component | Status | Description |
+|-----------|--------|-------------|
+| Monorepo Structure | ✅ | Turborepo + pnpm workspaces |
+| Runtime Adapters | ✅ | Cloudflare, Vercel Edge, Deno |
+| Core Domain | ✅ | Pure TypeScript, runtime-agnostic |
+| tRPC Contracts | ✅ | Routers, procedures, permissions |
+| Plugin System | ✅ | Foundation, extensible |
+| Tenant System | ⏳ | Multi-tenant architecture |
+| Role Engine | ⏳ | Data-driven roles |
+| Pricing Engine | ⏳ | Markup & profit flow |
+| Wallet System | ⏳ | Atomic operations |
+| Provider Abstraction | ⏳ | Plugin system |
+| Order Lifecycle | ⏳ | State machine |
+| API Keys | ⏳ | Scope-based permissions |
 
 ### License
 
